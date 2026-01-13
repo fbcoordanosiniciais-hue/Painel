@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Dashboard Real-Time</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+    :root {
+        --scale-clock: 1;
+        --scale-events: 1;
+        --scale-weather-left: 1;
+        --scale-weather-right: 1;
+        --overlay-opacity: 0.8; 
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    html, body {
+        width: 100%; height: 100%; overflow: hidden;
+        font-family: 'Open Sans', sans-serif;
+        color: white;
+    }
+
+    #background {
+        position: fixed; inset: 0;
+        background-image: url("https://bing.biturl.top/?resolution=1920&format=image&index=0&mkt=pt-BR");
+        background-size: cover; background-position: center; background-repeat: no-repeat;
+        background-color: #000; z-index: -2;
+    }
+
+    #overlay {
+        position: fixed; inset: 0;
+        background: linear-gradient(
+            to bottom, 
+            rgba(0,0,0, var(--overlay-opacity)) 0%, 
+            rgba(0,0,0, calc(var(--overlay-opacity) / 1.5)) 30%, 
+            rgba(0,0,0,0.0) 50%, 
+            rgba(0,0,0, calc(var(--overlay-opacity) / 1.5)) 70%, 
+            rgba(0,0,0, var(--overlay-opacity)) 100%
+        );
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    /* --- LAYOUT --- */
+    .main-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100vh;
+        padding: 30px 45px;
+    }
+
+    .top-section {
+        display: flex;
+        align-items: flex-start;
+        gap: 50px;
+    }
+
+    /* --- RELÓGIO (Open Sans) --- */
+    .clock-wrapper {
+        font-size: calc(16px * var(--scale-clock));
+        display: flex;
+        flex-direction: column;
+        min-width: 20em;
+        margin-top: -15px; 
+    }
+    
+    .time-group { display: flex; align-items: flex-start; line-height: 0.75; }
+    #time { font-size: 8.5em; font-weight: 300; letter-spacing: -4px; }
+    #seconds { font-size: 2.8em; font-weight: 400; margin-top: 0.1em; margin-left: 0.2em; opacity: 0.9; }
+    
+    #weekday { 
+        font-size: 3.8em; font-weight: 400; 
+        margin-top: 0.1em; line-height: 1;
+        text-transform: capitalize; color: #fff; 
+    }
+    
+    #full-date { 
+        font-size: 1.8em; font-weight: 400; 
+        color: rgba(255,255,255,0.7); margin-top: 0.1em; 
+    }
+
+    /* --- AGENDA (Rubik) --- */
+    #events-container {
+        font-family: 'Rubik', sans-serif;
+        display: flex;
+        gap: 40px;
+        flex-grow: 1;
+        font-size: calc(16px * var(--scale-events));
+        margin-top: -1.4em;
+    }
+
+    .day-column {
+        flex: 1; display: flex; flex-direction: column; min-width: 10em;
+    }
+
+    .day-header {
+        border-bottom: 1px solid rgba(255,255,255,0.3);
+        padding-bottom: 0.4em; margin-bottom: 0.8em;
+        display: flex; align-items: baseline; gap: 0.5em;
+    }
+    .day-header strong { font-size: 2.5em; font-weight: 300; line-height: 1; }
+    .day-header span { font-size: 1.5em; font-weight: 400; opacity: 0.9; }
+
+    .event-item {
+        border-left: 5px solid #00aaff;
+        padding-left: 0.8em; margin-bottom: 1.2em;
+        padding-top: 2px; padding-bottom: 2px;
+    }
+    .event-time { 
+        font-size: 1.1em; font-weight: 700;
+        color: rgba(255, 255, 255, 0.7); margin-bottom: 2px;
+    }
+    .event-title { 
+        font-size: 1.4em; font-weight: 500;
+        color: #ffffff; line-height: 1.1;
+    }
+
+    /* --- CLIMA --- */
+    .bottom-section {
+        display: flex; justify-content: space-between; align-items: flex-end;
+        margin-bottom: 10px; 
+    }
+
+    .weather-left { 
+        display: flex; flex-direction: column; 
+        font-size: calc(16px * var(--scale-weather-left));
+    }
+    .w-details { display: flex; gap: 1em; font-size: 1.1em; opacity: 0.9; margin-bottom: 0.5em; }
+    .w-main { display: flex; align-items: center; gap: 1em; }
+    .temp-big { font-size: 7em; font-weight: 300; line-height: 0.9; }
+    .icon-big { font-size: 4em; }
+
+    .weather-right { 
+        display: flex; gap: 3em; text-align: center; padding-right: 20px; 
+        font-size: calc(16px * var(--scale-weather-right));
+    }
+    .forecast-day { display: flex; flex-direction: column; align-items: center; gap: 0.2em; }
+    .f-day { font-size: 1.1em; font-weight: 700; text-transform: uppercase; }
+    .f-icon { font-size: 2em; margin: 0.2em 0; }
+    .f-temp { font-size: 1.2em; font-weight: 400; }
+    .f-temp span { opacity: 0.6; margin-left: 0.3em; }
+
+    /* --- SETTINGS --- */
+    #settings-btn { position: fixed; top: 15px; right: 15px; font-size: 24px; color: rgba(255,255,255,0.5); cursor: pointer; z-index: 100; }
+    #settings-btn:hover { color: #fff; }
+    #settings-modal { display: none; position: fixed; top: 50px; right: 15px; background: rgba(0,0,0,0.95); border: 1px solid #444; padding: 20px; border-radius: 8px; width: 300px; z-index: 101; color:white; font-family: sans-serif; max-height: 90vh; overflow-y: auto; }
+    .s-title { font-size:16px; border-bottom:1px solid #555; margin-bottom:15px; padding-bottom:5px; font-weight: 600; }
+    .setting-group { margin-bottom:15px; }
+    input[type=range] { width: 100%; margin-top:5px; cursor: pointer; }
+    .row-toggle { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+    .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 20px; }
+    .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: #00aaff; }
+    input:checked + .slider:before { transform: translateX(16px); }
+    .hidden { display: none !important; }
+    hr { border: 0; border-top: 1px solid #333; margin: 10px 0; }
+    .sub-label { font-size: 11px; color: #aaa; margin-top: 5px; display: block;}
+</style>
+</head>
+
+<body>
+
+    <div id="background"></div>
+    <div id="overlay"></div>
+
+    <i class="fa-solid fa-gear" id="settings-btn" onclick="toggleSettings()"></i>
+    <div id="settings-modal">
+        <div class="s-title">Configurações</div>
+        
+        <div class="setting-group">
+            <div class="row-toggle"><span>Fade Fundo</span> <label class="switch"><input type="checkbox" id="chk-overlay" onchange="upCfg()"><span class="slider"></span></label></div>
+            <input type="range" id="rng-overlay" min="0" max="1" step="0.05" oninput="upCfg()">
+        </div>
+        <hr>
+        <div class="setting-group">
+            <div class="row-toggle"><span>Relógio</span> <label class="switch"><input type="checkbox" id="chk-clock" onchange="upCfg()"><span class="slider"></span></label></div>
+            <input type="range" id="rng-clock" min="0.5" max="2" step="0.1" oninput="upCfg()">
+        </div>
+        <hr>
+        <div class="setting-group">
+            <div class="row-toggle"><span>Eventos</span> <label class="switch"><input type="checkbox" id="chk-events" onchange="upCfg()"><span class="slider"></span></label></div>
+            <input type="range" id="rng-events" min="0.5" max="2" step="0.1" oninput="upCfg()">
+            <div style="font-size:12px; margin-top:5px; color:#aaa;">Dias: <span id="lbl-days">4</span></div>
+            <input type="range" id="rng-days" min="1" max="6" step="1" oninput="upCfg()">
+        </div>
+        <hr>
+        <div class="setting-group">
+            <div class="row-toggle"><span>Clima Geral</span> <label class="switch"><input type="checkbox" id="chk-weather" onchange="upCfg()"><span class="slider"></span></label></div>
+            
+            <label class="sub-label">Tamanho Atual (Esq)</label>
+            <input type="range" id="rng-weather-left" min="0.5" max="2" step="0.1" oninput="upCfg()">
+            
+            <label class="sub-label">Tamanho Previsão (Dir)</label>
+            <input type="range" id="rng-weather-right" min="0.5" max="2" step="0.1" oninput="upCfg()">
+        </div>
+        
+        <button onclick="location.reload()" style="width:100%; background:#333; border:none; padding:10px; color:white; border-radius:4px; cursor:pointer; margin-top:10px;">Recarregar</button>
+    </div>
+
+    <div class="main-container">
+        <div class="top-section">
+            <div class="clock-wrapper" id="widget-clock">
+                <div class="time-group"><span id="time">00:00</span><span id="seconds">00</span></div>
+                <div id="weekday">---</div>
+                <div id="full-date">---</div>
+            </div>
+            <div id="events-container">
+                </div>
+        </div>
+
+        <div class="bottom-section" id="widget-weather">
+            <div class="weather-left">
+                <div class="w-details"><span id="wind">-- km/h</span> <span id="sunset">--:--</span></div>
+                <div class="w-main">
+                    <div class="temp-big" id="curr-temp">--°</div>
+                    <div class="icon-big" id="curr-icon"></div>
+                </div>
+            </div>
+            <div class="weather-right" id="forecast-area"></div>
+        </div>
+    </div>
+
+<script>
+    // --- Configuração Padrão ---
+    let cfg = JSON.parse(localStorage.getItem('dashCfgV9')) || { 
+        c:true, cs:1, 
+        e:true, es:1, d:4, 
+        w:true, wl:1, wr:1, 
+        o:true, os:0.8
+    };
+
+    const els = {
+        chkC: document.getElementById('chk-clock'), rngC: document.getElementById('rng-clock'),
+        chkE: document.getElementById('chk-events'), rngE: document.getElementById('rng-events'), rngD: document.getElementById('rng-days'),
+        chkW: document.getElementById('chk-weather'), 
+        rngWL: document.getElementById('rng-weather-left'), 
+        rngWR: document.getElementById('rng-weather-right'),
+        chkO: document.getElementById('chk-overlay'), rngO: document.getElementById('rng-overlay'),
+        wC: document.getElementById('widget-clock'), wE: document.getElementById('events-container'), wW: document.getElementById('widget-weather'),
+        lblD: document.getElementById('lbl-days'), overlay: document.getElementById('overlay')
+    };
+
+    // Load values
+    els.chkC.checked=cfg.c; els.rngC.value=cfg.cs;
+    els.chkE.checked=cfg.e; els.rngE.value=cfg.es; els.rngD.value=cfg.d;
+    els.chkW.checked=cfg.w; els.rngWL.value = cfg.wl || 1; els.rngWR.value = cfg.wr || 1;
+    els.chkO.checked=cfg.o; els.rngO.value=cfg.os;
+
+    function toggleSettings() {
+        const m = document.getElementById('settings-modal');
+        m.style.display = m.style.display==='block' ? 'none' : 'block';
+    }
+
+    function upCfg() {
+        cfg.c = els.chkC.checked; cfg.cs = els.rngC.value;
+        cfg.e = els.chkE.checked; cfg.es = els.rngE.value; cfg.d = parseInt(els.rngD.value);
+        cfg.w = els.chkW.checked; cfg.wl = els.rngWL.value; cfg.wr = els.rngWR.value;
+        cfg.o = els.chkO.checked; cfg.os = els.rngO.value;
+        
+        localStorage.setItem('dashCfgV9', JSON.stringify(cfg));
+        els.lblD.innerText = cfg.d;
+        
+        document.documentElement.style.setProperty('--scale-clock', cfg.cs);
+        document.documentElement.style.setProperty('--scale-events', cfg.es);
+        document.documentElement.style.setProperty('--scale-weather-left', cfg.wl);
+        document.documentElement.style.setProperty('--scale-weather-right', cfg.wr);
+        document.documentElement.style.setProperty('--overlay-opacity', cfg.os);
+
+        els.wC.classList.toggle('hidden', !cfg.c);
+        els.wE.classList.toggle('hidden', !cfg.e);
+        els.wW.classList.toggle('hidden', !cfg.w);
+        els.overlay.classList.toggle('hidden', !cfg.o);
+    }
+    upCfg();
+
+    function tick() {
+        const n = new Date();
+        document.getElementById('time').innerText = n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+        document.getElementById('seconds').innerText = String(n.getSeconds()).padStart(2,'0');
+        
+        let wd = n.toLocaleDateString('pt-BR',{weekday:'long'});
+        wd = wd.charAt(0).toUpperCase() + wd.slice(1);
+        if(wd.indexOf('-') > -1) {
+             let parts = wd.split('-');
+             if(parts[1]) parts[1] = parts[1].toLowerCase(); 
+             wd = parts.join('-');
+        }
+        document.getElementById('weekday').innerText = wd + ",";
+        
+        let m = n.toLocaleDateString('pt-BR',{month:'long'});
+        let d = n.getDate();
+        document.getElementById('full-date').innerText = `${m} ${d}`;
+    }
+    setInterval(tick, 1000); tick();
+
+    const SID = '19laSwxqymO6A2VJ-WXTZCuiOrShyxbK3cWsMM5MOTtI';
+    const Q = encodeURIComponent('SELECT B, C, E WHERE B IS NOT NULL ORDER BY B, E');
+
+    async function loadAgenda() {
+        if(!cfg.e) return;
+        try {
+            const r = await fetch(`https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=out:json&tq=${Q}`);
+            const t = await r.text();
+            const j = JSON.parse(t.substring(47).slice(0,-2));
+            const today = new Date(); today.setHours(0,0,0,0);
+            
+            const days = {};
+            j.table.rows.forEach(row => {
+                if(!row.c[0]) return;
+                let dRaw = row.c[0].f || row.c[0].v;
+                let dt;
+                if(String(dRaw).includes('/')) {
+                    const [dd,mm,aaaa] = dRaw.split('/');
+                    dt = new Date(aaaa,mm-1,dd);
+                } else if(String(dRaw).includes('Date')) {
+                    dt = new Date(eval("new "+dRaw));
+                } else return;
+                
+                dt.setHours(0,0,0,0);
+                if(dt < today) return;
+
+                const k = dt.toISOString();
+                if(!days[k]) days[k] = [];
+                
+                let time = row.c[2]?(row.c[2].f||row.c[2].v):"";
+                if(time.length>5) time = time.substring(0,5);
+                
+                days[k].push({ t: row.c[1]?row.c[1].v:"Evento", h: time });
+            });
+
+            let html = "";
+            let c = 0;
+            Object.keys(days).sort().forEach(k => {
+                if(c >= cfg.d) return;
+                const date = new Date(k);
+                const diff = Math.round((date-today)/(864e5));
+                let lbl = (diff===0?"Hoje": (diff===1?"Amanhã": date.toLocaleDateString('pt-BR',{weekday:'long'})));
+                if(diff > 1) {
+                    lbl = lbl.charAt(0).toUpperCase() + lbl.slice(1);
+                    if(lbl.includes('-feira')) lbl = lbl.replace('-feira',''); 
+                }
+
+                let evs = "";
+                days[k].forEach(e => {
+                    evs += `<div class="event-item">
+                        <div class="event-time">${e.h}</div>
+                        <div class="event-title">${e.t}</div>
+                    </div>`;
+                });
+
+                html += `<div class="day-column">
+                    <div class="day-header"><strong>${date.getDate()}</strong> <span>${lbl}</span></div>
+                    ${evs}
+                </div>`;
+                c++;
+            });
+            if(!html) html = "<div style='opacity:0.5; margin-top:20px'>Sem eventos.</div>";
+            els.wE.innerHTML = html;
+
+        } catch(e){ console.error(e); }
+    }
+
+    const LAT=-26.07, LON=-53.05;
+    function getIcon(c){
+        if(c===0) return '<i class="fa-solid fa-sun" style="color:#fff"></i>';
+        if(c<=3) return '<i class="fa-solid fa-cloud-sun"></i>';
+        if(c<=48) return '<i class="fa-solid fa-smog"></i>';
+        if(c<=67) return '<i class="fa-solid fa-cloud-rain"></i>';
+        if(c>=95) return '<i class="fa-solid fa-bolt"></i>';
+        return '<i class="fa-solid fa-cloud"></i>';
+    }
+
+    async function loadWeather(){
+        if(!cfg.w) return;
+        try {
+            const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunset&timezone=America%2FSao_Paulo`);
+            const d = await r.json();
+            
+            document.getElementById('curr-temp').innerText = Math.round(d.current.temperature_2m)+"°";
+            document.getElementById('curr-icon').innerHTML = getIcon(d.current.weather_code);
+            document.getElementById('wind').innerHTML = `<i class="fa-solid fa-wind"></i> ${d.current.wind_speed_10m} km/h`;
+            
+            const sun = new Date(d.daily.sunset[0]);
+            document.getElementById('sunset').innerHTML = `<i class="fa-solid fa-moon"></i> ${sun.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+
+            let h = "";
+            for(let i=1; i<=3; i++){
+                const dt = new Date(d.daily.time[i]+"T12:00");
+                const wd = dt.toLocaleDateString('pt-BR',{weekday:'short'}).toUpperCase().replace('.','');
+                h += `<div class="forecast-day">
+                    <div class="f-day">${wd}</div>
+                    <div class="f-icon">${getIcon(d.daily.weather_code[i])}</div>
+                    <div class="f-temp">${Math.round(d.daily.temperature_2m_max[i])} <span>${Math.round(d.daily.temperature_2m_min[i])}</span></div>
+                </div>`;
+            }
+            document.getElementById('forecast-area').innerHTML = h;
+        } catch(e){ console.error(e); }
+    }
+
+    // --- CICLOS DE ATUALIZAÇÃO ---
+    // Carga inicial
+    loadAgenda();
+    loadWeather();
+
+    // Atualiza Agenda a cada 15 segundos (Quase tempo real)
+    setInterval(loadAgenda, 15000);
+
+    // Atualiza Clima a cada 10 minutos (Economia de API)
+    setInterval(loadWeather, 600000);
+
+</script>
+</body>
+</html>
