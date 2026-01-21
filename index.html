@@ -46,33 +46,34 @@
         pointer-events: none;
     }
 
-    /* --- LAYOUT --- */
+    /* --- LAYOUT PRINCIPAL --- */
     .main-container {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         height: 100vh;
-        padding: 60px 45px 30px 45px;
+        /* Diminuí a margem lateral de 45px para 30px para ganhar largura */
+        padding: 60px 30px 30px 30px;
     }
 
+    /* --- TOPO (Relógio e Agenda) --- */
     .top-section {
         display: flex;
         align-items: flex-start;
-        gap: 50px;
-        padding-right: calc(150px * var(--scale-logo));
+        gap: 40px; /* Reduzi um pouco o gap entre relogio e agenda */
+        width: 100%;
+        /* Removi o padding-right exagerado. Agora vai até o fim. */
+        padding-right: 0; 
     }
 
-    /* --- RELÓGIO (CORRIGIDO PARA NÃO QUEBRAR) --- */
+    /* --- RELÓGIO --- */
     .clock-wrapper {
         font-size: calc(16px * var(--scale-clock));
         display: flex;
         flex-direction: column;
-        
-        /* CORREÇÃO 1: Impede que o relógio seja esmagado pela agenda */
-        flex-shrink: 0; 
-        
         min-width: 20em;
         margin-top: -15px; 
+        flex-shrink: 0; 
     }
     
     .time-group { display: flex; align-items: flex-start; line-height: 0.75; }
@@ -83,8 +84,6 @@
         font-size: 3.8em; font-weight: 400; 
         margin-top: 0.1em; line-height: 1;
         text-transform: capitalize; color: #fff; 
-        
-        /* CORREÇÃO 2: Proíbe terminantemente a quebra de linha */
         white-space: nowrap; 
     }
     
@@ -97,27 +96,28 @@
     #events-container {
         font-family: 'Rubik', sans-serif;
         display: flex;
-        gap: 40px;
+        gap: 15px; /* Gap menor entre colunas para caber mais */
         flex-grow: 1;
         font-size: calc(16px * var(--scale-events));
         margin-top: -1.4em;
-        /* Garante que a agenda respeite o espaço que sobra */
         min-width: 0; 
     }
 
     .day-column {
-        flex: 1; display: flex; flex-direction: column; min-width: 10em;
+        flex: 1; display: flex; flex-direction: column; min-width: 0;
     }
 
     .day-header {
         border-bottom: 1px solid rgba(255,255,255,0.3);
         padding-bottom: 0.4em; margin-bottom: 0.8em;
         display: flex; align-items: baseline; gap: 0.5em;
-        white-space: nowrap;
+        white-space: normal; /* Permite quebrar linha */
+        line-height: 1.1;
     }
     .day-header strong { font-size: 2.5em; font-weight: 300; line-height: 1; }
-    /* Ajuste fino na fonte do mês da agenda para caber bonito */
-    .day-header span { font-size: 1.2em; font-weight: 400; opacity: 0.9; text-transform: capitalize; }
+    .day-header span { 
+        font-size: 1.2em; font-weight: 400; opacity: 0.9; text-transform: capitalize; 
+    }
 
     .event-item {
         border-left: 5px solid #00aaff;
@@ -130,30 +130,38 @@
     }
     .event-title { 
         font-size: 1.4em; font-weight: 500;
-        color: #ffffff; line-height: 1.1;
+        color: #ffffff; 
+        line-height: 1.2; 
+        white-space: normal; /* Permite quebrar linha */
+        word-wrap: break-word;
     }
 
-    /* --- LOGO --- */
-    #settings-logo {
+    /* --- BOTÃO DE CONFIGURAÇÕES --- */
+    #settings-btn {
         position: fixed;
-        top: 35px;
-        right: 45px;
-        height: calc(70px * var(--scale-logo));
-        width: auto;
+        top: 20px;
+        right: 20px;
+        font-size: 1.5em;
+        color: rgba(255,255,255,0.4); /* Bem transparente */
         z-index: 200;
-        opacity: 0.9;
         cursor: pointer;
-        transition: transform 0.2s;
+        transition: transform 0.3s, color 0.3s;
     }
-    #settings-logo:hover {
-        transform: scale(1.05);
-        opacity: 1;
+    #settings-btn:hover {
+        color: #fff;
+        transform: rotate(45deg);
     }
 
-    /* --- CLIMA --- */
+    /* --- RODAPÉ --- */
     .bottom-section {
         display: flex; justify-content: space-between; align-items: flex-end;
         margin-bottom: 10px; 
+    }
+
+    .weather-combined {
+        display: flex;
+        gap: 50px;
+        align-items: flex-end;
     }
 
     .weather-left { 
@@ -166,7 +174,7 @@
     .icon-big { font-size: 4em; }
 
     .weather-right { 
-        display: flex; gap: 3em; text-align: center; padding-right: 20px; 
+        display: flex; gap: 3em; text-align: center; 
         font-size: calc(16px * var(--scale-weather-right));
     }
     .forecast-day { display: flex; flex-direction: column; align-items: center; gap: 0.2em; }
@@ -175,8 +183,15 @@
     .f-temp { font-size: 1.2em; font-weight: 400; }
     .f-temp span { opacity: 0.6; margin-left: 0.3em; }
 
-    /* --- SETTINGS --- */
-    #settings-modal { display: none; position: fixed; top: 100px; right: 45px; background: rgba(0,0,0,0.95); border: 1px solid #444; padding: 20px; border-radius: 8px; width: 300px; z-index: 101; color:white; font-family: sans-serif; max-height: 80vh; overflow-y: auto; }
+    /* --- LOGO --- */
+    #bottom-logo {
+        height: calc(70px * var(--scale-logo));
+        width: auto;
+        opacity: 0.9;
+    }
+
+    /* --- SETTINGS MODAL --- */
+    #settings-modal { display: none; position: fixed; top: 60px; right: 20px; background: rgba(0,0,0,0.95); border: 1px solid #444; padding: 20px; border-radius: 8px; width: 300px; z-index: 101; color:white; font-family: sans-serif; max-height: 80vh; overflow-y: auto; }
     .s-title { font-size:16px; border-bottom:1px solid #555; margin-bottom:15px; padding-bottom:5px; font-weight: 600; }
     .setting-group { margin-bottom:15px; }
     input[type=range] { width: 100%; margin-top:5px; cursor: pointer; }
@@ -198,7 +213,7 @@
     <div id="background"></div>
     <div id="overlay"></div>
 
-    <img src="logo.png" id="settings-logo" alt="Configurações" onclick="toggleSettings()" title="Abrir Configurações">
+    <i class="fa-solid fa-gear" id="settings-btn" onclick="toggleSettings()" title="Abrir Configurações"></i>
     
     <div id="settings-modal">
         <div class="s-title">Configurações</div>
@@ -209,12 +224,6 @@
         </div>
         <hr>
         
-        <div class="setting-group">
-            <label class="sub-label" style="font-size:14px; color:white;">Tamanho da Logo</label>
-            <input type="range" id="rng-logo" min="0.5" max="3.0" step="0.1" oninput="upCfg()">
-        </div>
-        <hr>
-
         <div class="setting-group">
             <div class="row-toggle"><span>Relógio</span> <label class="switch"><input type="checkbox" id="chk-clock" onchange="upCfg()"><span class="slider"></span></label></div>
             <input type="range" id="rng-clock" min="0.5" max="2" step="0.1" oninput="upCfg()">
@@ -234,6 +243,11 @@
             <label class="sub-label">Tamanho Previsão (Dir)</label>
             <input type="range" id="rng-weather-right" min="0.5" max="2" step="0.1" oninput="upCfg()">
         </div>
+        <hr>
+        <div class="setting-group">
+            <label class="sub-label" style="font-size:14px; color:white;">Tamanho da Logo (Rodapé)</label>
+            <input type="range" id="rng-logo" min="0.5" max="3.0" step="0.1" oninput="upCfg()">
+        </div>
         
         <button onclick="location.reload()" style="width:100%; background:#333; border:none; padding:10px; color:white; border-radius:4px; cursor:pointer; margin-top:10px;">Recarregar</button>
     </div>
@@ -249,21 +263,25 @@
             <div id="events-container"></div>
         </div>
 
-        <div class="bottom-section" id="widget-weather">
-            <div class="weather-left">
-                <div class="w-details"><span id="wind">-- km/h</span> <span id="sunset">--:--</span></div>
-                <div class="w-main">
-                    <div class="temp-big" id="curr-temp">--°</div>
-                    <div class="icon-big" id="curr-icon"></div>
+        <div class="bottom-section">
+            <div class="weather-combined" id="widget-weather">
+                <div class="weather-left">
+                    <div class="w-details"><span id="wind">-- km/h</span> <span id="sunset">--:--</span></div>
+                    <div class="w-main">
+                        <div class="temp-big" id="curr-temp">--°</div>
+                        <div class="icon-big" id="curr-icon"></div>
+                    </div>
                 </div>
+                <div class="weather-right" id="forecast-area"></div>
             </div>
-            <div class="weather-right" id="forecast-area"></div>
+
+            <img src="logo.png" id="bottom-logo" alt="Logo">
         </div>
     </div>
 
 <script>
     // --- Configuração Padrão ---
-    let cfg = JSON.parse(localStorage.getItem('dashCfgV20')) || { 
+    let cfg = JSON.parse(localStorage.getItem('dashCfgV24')) || { 
         c:true, cs:1, 
         e:true, es:1, d:4, 
         w:true, wl:1, wr:1, 
@@ -301,7 +319,7 @@
         cfg.o = els.chkO.checked; cfg.os = els.rngO.value;
         cfg.ls = els.rngL.value;
         
-        localStorage.setItem('dashCfgV20', JSON.stringify(cfg));
+        localStorage.setItem('dashCfgV24', JSON.stringify(cfg));
         els.lblD.innerText = cfg.d;
         
         document.documentElement.style.setProperty('--scale-clock', cfg.cs);
@@ -323,7 +341,6 @@
         document.getElementById('time').innerText = n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
         document.getElementById('seconds').innerText = String(n.getSeconds()).padStart(2,'0');
         
-        // --- RELÓGIO (DIA DA SEMANA) ---
         let wd = n.toLocaleDateString('pt-BR',{weekday:'long'});
         wd = wd.charAt(0).toUpperCase() + wd.slice(1);
         if(wd.indexOf('-') > -1) {
@@ -410,7 +427,6 @@
                     if(lbl.includes('-feira')) lbl = lbl.replace('-feira',''); 
                 }
 
-                // --- MÊS NA AGENDA (Lado Direito) ---
                 let mon = date.toLocaleDateString('pt-BR',{month:'long'});
                 mon = mon.charAt(0).toUpperCase() + mon.slice(1);
                 let headerText = `${mon}, ${lbl}`;
