@@ -13,7 +13,7 @@
         --scale-events: 1;
         --scale-weather-left: 1;
         --scale-weather-right: 1;
-        --scale-logo: 1; /* Nova variável para o Logo */
+        --scale-logo: 1;
         --overlay-opacity: 0.8; 
     }
 
@@ -121,21 +121,6 @@
         color: #ffffff; line-height: 1.1;
     }
 
-    /* --- LOGO (NOVO) --- */
-    #logo-container {
-        /* Flexível para não quebrar o layout */
-        display: flex;
-        align-items: center; 
-        justify-content: flex-start; /* Alinha a esquerda */
-        pointer-events: none; /* Deixa clicar no fundo se precisar */
-    }
-    #my-logo {
-        /* Altura base de 100px multiplicada pela escala */
-        height: calc(100px * var(--scale-logo)); 
-        width: auto;
-        opacity: 0.95;
-    }
-
     /* --- CLIMA --- */
     .bottom-section {
         display: flex; justify-content: space-between; align-items: flex-end;
@@ -161,10 +146,26 @@
     .f-temp { font-size: 1.2em; font-weight: 400; }
     .f-temp span { opacity: 0.6; margin-left: 0.3em; }
 
+    /* --- LOGO INTERATIVA (BOTÃO DE MENU) --- */
+    #my-logo {
+        position: fixed;
+        top: 30px;
+        right: 45px;
+        /* Tamanho base 60px multiplicado pelo slider */
+        height: calc(60px * var(--scale-logo)); 
+        width: auto;
+        z-index: 200; /* Acima de tudo */
+        opacity: 0.8;
+        cursor: pointer; /* Mãozinha ao passar o mouse */
+        transition: transform 0.2s, opacity 0.2s;
+    }
+    #my-logo:hover {
+        opacity: 1;
+        transform: scale(1.05); /* Leve zoom ao passar o mouse */
+    }
+
     /* --- SETTINGS --- */
-    #settings-btn { position: fixed; top: 15px; right: 15px; font-size: 24px; color: rgba(255,255,255,0.5); cursor: pointer; z-index: 100; }
-    #settings-btn:hover { color: #fff; }
-    #settings-modal { display: none; position: fixed; top: 50px; right: 15px; background: rgba(0,0,0,0.95); border: 1px solid #444; padding: 20px; border-radius: 8px; width: 300px; z-index: 101; color:white; font-family: sans-serif; max-height: 90vh; overflow-y: auto; }
+    #settings-modal { display: none; position: fixed; top: 80px; right: 45px; background: rgba(0,0,0,0.95); border: 1px solid #444; padding: 20px; border-radius: 8px; width: 300px; z-index: 201; color:white; font-family: sans-serif; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
     .s-title { font-size:16px; border-bottom:1px solid #555; margin-bottom:15px; padding-bottom:5px; font-weight: 600; }
     .setting-group { margin-bottom:15px; }
     input[type=range] { width: 100%; margin-top:5px; cursor: pointer; }
@@ -186,7 +187,7 @@
     <div id="background"></div>
     <div id="overlay"></div>
 
-    <i class="fa-solid fa-gear" id="settings-btn" onclick="toggleSettings()"></i>
+    <img src="logo.png" id="my-logo" alt="Configurações" onclick="toggleSettings()" title="Abrir Configurações">
     
     <div id="settings-modal">
         <div class="s-title">Configurações</div>
@@ -196,18 +197,18 @@
             <input type="range" id="rng-overlay" min="0" max="1" step="0.05" oninput="upCfg()">
         </div>
         <hr>
+        
+        <div class="setting-group">
+            <label class="sub-label" style="font-size:14px; color:white;">Tamanho da Logo</label>
+            <input type="range" id="rng-logo" min="0.5" max="3.0" step="0.1" oninput="upCfg()">
+        </div>
+        <hr>
+
         <div class="setting-group">
             <div class="row-toggle"><span>Relógio</span> <label class="switch"><input type="checkbox" id="chk-clock" onchange="upCfg()"><span class="slider"></span></label></div>
             <input type="range" id="rng-clock" min="0.5" max="2" step="0.1" oninput="upCfg()">
         </div>
         <hr>
-        
-        <div class="setting-group">
-            <div class="row-toggle"><span>Logo (Esq. Meio)</span> <label class="switch"><input type="checkbox" id="chk-logo" onchange="upCfg()"><span class="slider"></span></label></div>
-            <input type="range" id="rng-logo" min="0.2" max="3" step="0.1" oninput="upCfg()">
-        </div>
-        <hr>
-
         <div class="setting-group">
             <div class="row-toggle"><span>Eventos</span> <label class="switch"><input type="checkbox" id="chk-events" onchange="upCfg()"><span class="slider"></span></label></div>
             <input type="range" id="rng-events" min="0.5" max="2" step="0.1" oninput="upCfg()">
@@ -237,10 +238,6 @@
             <div id="events-container"></div>
         </div>
 
-        <div id="logo-container">
-            <img src="logo.png" id="my-logo" alt="Logo">
-        </div>
-
         <div class="bottom-section" id="widget-weather">
             <div class="weather-left">
                 <div class="w-details"><span id="wind">-- km/h</span> <span id="sunset">--:--</span></div>
@@ -255,12 +252,11 @@
 
 <script>
     // --- Configuração Padrão ---
-    // Adicionado 'l' (logo visible) e 'ls' (logo scale)
-    let cfg = JSON.parse(localStorage.getItem('dashCfgV11')) || { 
+    let cfg = JSON.parse(localStorage.getItem('dashCfgV12')) || { 
         c:true, cs:1, 
         e:true, es:1, d:4, 
         w:true, wl:1, wr:1, 
-        l:true, ls:1, // Configs do Logo
+        ls:1, // Logo Scale (removido o toggle L)
         o:true, os:0.8
     };
 
@@ -271,8 +267,8 @@
         rngWL: document.getElementById('rng-weather-left'), 
         rngWR: document.getElementById('rng-weather-right'),
         chkO: document.getElementById('chk-overlay'), rngO: document.getElementById('rng-overlay'),
-        // Elementos do Logo
-        chkL: document.getElementById('chk-logo'), rngL: document.getElementById('rng-logo'), wL: document.getElementById('logo-container'),
+        // Logo
+        rngL: document.getElementById('rng-logo'),
         
         wC: document.getElementById('widget-clock'), wE: document.getElementById('events-container'), wW: document.getElementById('widget-weather'),
         lblD: document.getElementById('lbl-days'), overlay: document.getElementById('overlay')
@@ -283,8 +279,7 @@
     els.chkE.checked=cfg.e; els.rngE.value=cfg.es; els.rngD.value=cfg.d;
     els.chkW.checked=cfg.w; els.rngWL.value = cfg.wl || 1; els.rngWR.value = cfg.wr || 1;
     els.chkO.checked=cfg.o; els.rngO.value=cfg.os;
-    // Load Logo values
-    els.chkL.checked=cfg.l; els.rngL.value=cfg.ls;
+    els.rngL.value=cfg.ls;
 
     function toggleSettings() {
         const m = document.getElementById('settings-modal');
@@ -296,24 +291,22 @@
         cfg.e = els.chkE.checked; cfg.es = els.rngE.value; cfg.d = parseInt(els.rngD.value);
         cfg.w = els.chkW.checked; cfg.wl = els.rngWL.value; cfg.wr = els.rngWR.value;
         cfg.o = els.chkO.checked; cfg.os = els.rngO.value;
-        // Save Logo
-        cfg.l = els.chkL.checked; cfg.ls = els.rngL.value;
+        cfg.ls = els.rngL.value;
         
-        localStorage.setItem('dashCfgV11', JSON.stringify(cfg));
+        localStorage.setItem('dashCfgV12', JSON.stringify(cfg));
         els.lblD.innerText = cfg.d;
         
         document.documentElement.style.setProperty('--scale-clock', cfg.cs);
         document.documentElement.style.setProperty('--scale-events', cfg.es);
         document.documentElement.style.setProperty('--scale-weather-left', cfg.wl);
         document.documentElement.style.setProperty('--scale-weather-right', cfg.wr);
-        document.documentElement.style.setProperty('--scale-logo', cfg.ls); // Aplica escala logo
+        document.documentElement.style.setProperty('--scale-logo', cfg.ls);
         document.documentElement.style.setProperty('--overlay-opacity', cfg.os);
 
         els.wC.classList.toggle('hidden', !cfg.c);
         els.wE.classList.toggle('hidden', !cfg.e);
         els.wW.classList.toggle('hidden', !cfg.w);
         els.overlay.classList.toggle('hidden', !cfg.o);
-        els.wL.classList.toggle('hidden', !cfg.l); // Toggle Logo
     }
     upCfg();
 
