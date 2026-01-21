@@ -62,11 +62,15 @@
         padding-right: calc(150px * var(--scale-logo));
     }
 
-    /* --- RELÓGIO --- */
+    /* --- RELÓGIO (CORRIGIDO PARA NÃO QUEBRAR) --- */
     .clock-wrapper {
         font-size: calc(16px * var(--scale-clock));
         display: flex;
         flex-direction: column;
+        
+        /* CORREÇÃO 1: Impede que o relógio seja esmagado pela agenda */
+        flex-shrink: 0; 
+        
         min-width: 20em;
         margin-top: -15px; 
     }
@@ -78,8 +82,9 @@
     #weekday { 
         font-size: 3.8em; font-weight: 400; 
         margin-top: 0.1em; line-height: 1;
-        text-transform: capitalize; color: #fff;
-        /* AQUI ESTÁ A CORREÇÃO: Isso impede que a palavra quebre linha */
+        text-transform: capitalize; color: #fff; 
+        
+        /* CORREÇÃO 2: Proíbe terminantemente a quebra de linha */
         white-space: nowrap; 
     }
     
@@ -96,6 +101,8 @@
         flex-grow: 1;
         font-size: calc(16px * var(--scale-events));
         margin-top: -1.4em;
+        /* Garante que a agenda respeite o espaço que sobra */
+        min-width: 0; 
     }
 
     .day-column {
@@ -109,6 +116,7 @@
         white-space: nowrap;
     }
     .day-header strong { font-size: 2.5em; font-weight: 300; line-height: 1; }
+    /* Ajuste fino na fonte do mês da agenda para caber bonito */
     .day-header span { font-size: 1.2em; font-weight: 400; opacity: 0.9; text-transform: capitalize; }
 
     .event-item {
@@ -128,17 +136,17 @@
     /* --- LOGO --- */
     #settings-logo {
         position: fixed;
-        top: 35px;        
-        right: 45px;      
-        height: calc(70px * var(--scale-logo)); 
+        top: 35px;
+        right: 45px;
+        height: calc(70px * var(--scale-logo));
         width: auto;
         z-index: 200;
         opacity: 0.9;
-        cursor: pointer;  
+        cursor: pointer;
         transition: transform 0.2s;
     }
     #settings-logo:hover {
-        transform: scale(1.05); 
+        transform: scale(1.05);
         opacity: 1;
     }
 
@@ -255,7 +263,7 @@
 
 <script>
     // --- Configuração Padrão ---
-    let cfg = JSON.parse(localStorage.getItem('dashCfgV18')) || { 
+    let cfg = JSON.parse(localStorage.getItem('dashCfgV20')) || { 
         c:true, cs:1, 
         e:true, es:1, d:4, 
         w:true, wl:1, wr:1, 
@@ -293,7 +301,7 @@
         cfg.o = els.chkO.checked; cfg.os = els.rngO.value;
         cfg.ls = els.rngL.value;
         
-        localStorage.setItem('dashCfgV18', JSON.stringify(cfg));
+        localStorage.setItem('dashCfgV20', JSON.stringify(cfg));
         els.lblD.innerText = cfg.d;
         
         document.documentElement.style.setProperty('--scale-clock', cfg.cs);
@@ -315,7 +323,7 @@
         document.getElementById('time').innerText = n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
         document.getElementById('seconds').innerText = String(n.getSeconds()).padStart(2,'0');
         
-        // --- RELÓGIO ORIGINAL ---
+        // --- RELÓGIO (DIA DA SEMANA) ---
         let wd = n.toLocaleDateString('pt-BR',{weekday:'long'});
         wd = wd.charAt(0).toUpperCase() + wd.slice(1);
         if(wd.indexOf('-') > -1) {
