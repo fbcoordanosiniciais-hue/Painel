@@ -59,6 +59,9 @@
         display: flex;
         align-items: flex-start;
         gap: 50px;
+        /* NOVA LINHA: Cria um espaço dinâmico à direita para a logo não sobrepor a agenda.
+           220px é uma estimativa do espaço base necessário (largura da logo + margem) */
+        padding-right: calc(220px * var(--scale-logo));
     }
 
     /* --- RELÓGIO --- */
@@ -256,7 +259,7 @@
         c:true, cs:1, 
         e:true, es:1, d:4, 
         w:true, wl:1, wr:1, 
-        ls:1, // Logo Scale (removido o toggle L)
+        ls:1, // Logo Scale
         o:true, os:0.8
     };
 
