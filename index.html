@@ -59,8 +59,7 @@
         display: flex;
         align-items: flex-start;
         gap: 50px;
-        /* NOVA LINHA: Cria um espaço dinâmico à direita para a logo não sobrepor a agenda.
-           220px é uma estimativa do espaço base necessário (largura da logo + margem) */
+        /* Espaço dinâmico na direita para a logo */
         padding-right: calc(220px * var(--scale-logo));
     }
 
@@ -88,24 +87,30 @@
         color: rgba(255,255,255,0.7); margin-top: 0.1em; 
     }
 
-    /* --- AGENDA --- */
+    /* --- AGENDA (Rubik) --- */
     #events-container {
         font-family: 'Rubik', sans-serif;
         display: flex;
         gap: 40px;
         flex-grow: 1;
+        width: 100%; /* Garante que ocupa o espaço todo */
         font-size: calc(16px * var(--scale-events));
         margin-top: -1.4em;
     }
 
     .day-column {
-        flex: 1; display: flex; flex-direction: column; min-width: 10em;
+        /* MUDANÇA IMPORTANTE: 1 1 0px força divisão matemática exata */
+        flex: 1 1 0px; 
+        display: flex; 
+        flex-direction: column; 
+        min-width: 0; /* Permite encolher se necessário para caber */
     }
 
     .day-header {
         border-bottom: 1px solid rgba(255,255,255,0.3);
         padding-bottom: 0.4em; margin-bottom: 0.8em;
         display: flex; align-items: baseline; gap: 0.5em;
+        white-space: nowrap; /* Evita quebra de linha no cabeçalho */
     }
     .day-header strong { font-size: 2.5em; font-weight: 300; line-height: 1; }
     .day-header span { font-size: 1.5em; font-weight: 400; opacity: 0.9; }
@@ -122,6 +127,23 @@
     .event-title { 
         font-size: 1.4em; font-weight: 500;
         color: #ffffff; line-height: 1.1;
+    }
+
+    /* --- LOGO --- */
+    #my-logo {
+        position: fixed;
+        top: 30px;
+        right: 45px;
+        height: calc(60px * var(--scale-logo)); 
+        width: auto;
+        z-index: 200;
+        opacity: 0.8;
+        cursor: pointer;
+        transition: transform 0.2s, opacity 0.2s;
+    }
+    #my-logo:hover {
+        opacity: 1;
+        transform: scale(1.05);
     }
 
     /* --- CLIMA --- */
@@ -148,24 +170,6 @@
     .f-icon { font-size: 2em; margin: 0.2em 0; }
     .f-temp { font-size: 1.2em; font-weight: 400; }
     .f-temp span { opacity: 0.6; margin-left: 0.3em; }
-
-    /* --- LOGO INTERATIVA (BOTÃO DE MENU) --- */
-    #my-logo {
-        position: fixed;
-        top: 30px;
-        right: 45px;
-        /* Tamanho base 60px multiplicado pelo slider */
-        height: calc(60px * var(--scale-logo)); 
-        width: auto;
-        z-index: 200; /* Acima de tudo */
-        opacity: 0.8;
-        cursor: pointer; /* Mãozinha ao passar o mouse */
-        transition: transform 0.2s, opacity 0.2s;
-    }
-    #my-logo:hover {
-        opacity: 1;
-        transform: scale(1.05); /* Leve zoom ao passar o mouse */
-    }
 
     /* --- SETTINGS --- */
     #settings-modal { display: none; position: fixed; top: 80px; right: 45px; background: rgba(0,0,0,0.95); border: 1px solid #444; padding: 20px; border-radius: 8px; width: 300px; z-index: 201; color:white; font-family: sans-serif; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
@@ -231,7 +235,6 @@
     </div>
 
     <div class="main-container">
-        
         <div class="top-section">
             <div class="clock-wrapper" id="widget-clock">
                 <div class="time-group"><span id="time">00:00</span><span id="seconds">00</span></div>
@@ -254,12 +257,11 @@
     </div>
 
 <script>
-    // --- Configuração Padrão ---
-    let cfg = JSON.parse(localStorage.getItem('dashCfgV12')) || { 
+    let cfg = JSON.parse(localStorage.getItem('dashCfgV13')) || { 
         c:true, cs:1, 
         e:true, es:1, d:4, 
         w:true, wl:1, wr:1, 
-        ls:1, // Logo Scale
+        ls:1, 
         o:true, os:0.8
     };
 
@@ -270,14 +272,11 @@
         rngWL: document.getElementById('rng-weather-left'), 
         rngWR: document.getElementById('rng-weather-right'),
         chkO: document.getElementById('chk-overlay'), rngO: document.getElementById('rng-overlay'),
-        // Logo
         rngL: document.getElementById('rng-logo'),
-        
         wC: document.getElementById('widget-clock'), wE: document.getElementById('events-container'), wW: document.getElementById('widget-weather'),
         lblD: document.getElementById('lbl-days'), overlay: document.getElementById('overlay')
     };
 
-    // Load values
     els.chkC.checked=cfg.c; els.rngC.value=cfg.cs;
     els.chkE.checked=cfg.e; els.rngE.value=cfg.es; els.rngD.value=cfg.d;
     els.chkW.checked=cfg.w; els.rngWL.value = cfg.wl || 1; els.rngWR.value = cfg.wr || 1;
@@ -296,7 +295,7 @@
         cfg.o = els.chkO.checked; cfg.os = els.rngO.value;
         cfg.ls = els.rngL.value;
         
-        localStorage.setItem('dashCfgV12', JSON.stringify(cfg));
+        localStorage.setItem('dashCfgV13', JSON.stringify(cfg));
         els.lblD.innerText = cfg.d;
         
         document.documentElement.style.setProperty('--scale-clock', cfg.cs);
