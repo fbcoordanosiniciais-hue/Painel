@@ -13,7 +13,7 @@
         --scale-events: 1;
         --scale-weather-left: 1;
         --scale-weather-right: 1;
-        --scale-logo: 1;
+        --scale-logo: 1; /* Variável para tamanho da logo */
         --overlay-opacity: 0.8; 
     }
 
@@ -59,8 +59,9 @@
         display: flex;
         align-items: flex-start;
         gap: 50px;
-        /* Espaço dinâmico na direita para a logo */
-        padding-right: calc(220px * var(--scale-logo));
+        /* ALTERAÇÃO: Espaço na direita para a agenda não bater na logo.
+           Calculado com base no tamanho da logo */
+        padding-right: calc(150px * var(--scale-logo));
     }
 
     /* --- RELÓGIO --- */
@@ -87,30 +88,24 @@
         color: rgba(255,255,255,0.7); margin-top: 0.1em; 
     }
 
-    /* --- AGENDA (Rubik) --- */
+    /* --- AGENDA --- */
     #events-container {
         font-family: 'Rubik', sans-serif;
         display: flex;
         gap: 40px;
         flex-grow: 1;
-        width: 100%; /* Garante que ocupa o espaço todo */
         font-size: calc(16px * var(--scale-events));
         margin-top: -1.4em;
     }
 
     .day-column {
-        /* MUDANÇA IMPORTANTE: 1 1 0px força divisão matemática exata */
-        flex: 1 1 0px; 
-        display: flex; 
-        flex-direction: column; 
-        min-width: 0; /* Permite encolher se necessário para caber */
+        flex: 1; display: flex; flex-direction: column; min-width: 10em;
     }
 
     .day-header {
         border-bottom: 1px solid rgba(255,255,255,0.3);
         padding-bottom: 0.4em; margin-bottom: 0.8em;
         display: flex; align-items: baseline; gap: 0.5em;
-        white-space: nowrap; /* Evita quebra de linha no cabeçalho */
     }
     .day-header strong { font-size: 2.5em; font-weight: 300; line-height: 1; }
     .day-header span { font-size: 1.5em; font-weight: 400; opacity: 0.9; }
@@ -129,21 +124,21 @@
         color: #ffffff; line-height: 1.1;
     }
 
-    /* --- LOGO --- */
-    #my-logo {
+    /* --- LOGO (NOVO BOTÃO) --- */
+    #settings-logo {
         position: fixed;
-        top: 30px;
-        right: 45px;
-        height: calc(60px * var(--scale-logo)); 
+        top: 35px;        /* Posição no topo */
+        right: 45px;      /* Posição na direita (mesma margem do corpo) */
+        height: calc(70px * var(--scale-logo)); /* Tamanho dinâmico */
         width: auto;
         z-index: 200;
-        opacity: 0.8;
-        cursor: pointer;
-        transition: transform 0.2s, opacity 0.2s;
+        opacity: 0.9;
+        cursor: pointer;  /* Mostra que é clicável */
+        transition: transform 0.2s;
     }
-    #my-logo:hover {
+    #settings-logo:hover {
+        transform: scale(1.05); /* Efeito de zoom */
         opacity: 1;
-        transform: scale(1.05);
     }
 
     /* --- CLIMA --- */
@@ -172,7 +167,7 @@
     .f-temp span { opacity: 0.6; margin-left: 0.3em; }
 
     /* --- SETTINGS --- */
-    #settings-modal { display: none; position: fixed; top: 80px; right: 45px; background: rgba(0,0,0,0.95); border: 1px solid #444; padding: 20px; border-radius: 8px; width: 300px; z-index: 201; color:white; font-family: sans-serif; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+    #settings-modal { display: none; position: fixed; top: 100px; right: 45px; background: rgba(0,0,0,0.95); border: 1px solid #444; padding: 20px; border-radius: 8px; width: 300px; z-index: 101; color:white; font-family: sans-serif; max-height: 80vh; overflow-y: auto; }
     .s-title { font-size:16px; border-bottom:1px solid #555; margin-bottom:15px; padding-bottom:5px; font-weight: 600; }
     .setting-group { margin-bottom:15px; }
     input[type=range] { width: 100%; margin-top:5px; cursor: pointer; }
@@ -194,7 +189,7 @@
     <div id="background"></div>
     <div id="overlay"></div>
 
-    <img src="logo.png" id="my-logo" alt="Configurações" onclick="toggleSettings()" title="Abrir Configurações">
+    <img src="logo.png" id="settings-logo" alt="Configurações" onclick="toggleSettings()" title="Abrir Configurações">
     
     <div id="settings-modal">
         <div class="s-title">Configurações</div>
@@ -235,6 +230,7 @@
     </div>
 
     <div class="main-container">
+        
         <div class="top-section">
             <div class="clock-wrapper" id="widget-clock">
                 <div class="time-group"><span id="time">00:00</span><span id="seconds">00</span></div>
@@ -257,11 +253,12 @@
     </div>
 
 <script>
-    let cfg = JSON.parse(localStorage.getItem('dashCfgV13')) || { 
+    // --- Configuração Padrão ---
+    let cfg = JSON.parse(localStorage.getItem('dashCfgV14')) || { 
         c:true, cs:1, 
         e:true, es:1, d:4, 
         w:true, wl:1, wr:1, 
-        ls:1, 
+        ls:1, // Logo Scale
         o:true, os:0.8
     };
 
@@ -272,11 +269,14 @@
         rngWL: document.getElementById('rng-weather-left'), 
         rngWR: document.getElementById('rng-weather-right'),
         chkO: document.getElementById('chk-overlay'), rngO: document.getElementById('rng-overlay'),
-        rngL: document.getElementById('rng-logo'),
+        
+        rngL: document.getElementById('rng-logo'), // Slider Logo
+        
         wC: document.getElementById('widget-clock'), wE: document.getElementById('events-container'), wW: document.getElementById('widget-weather'),
         lblD: document.getElementById('lbl-days'), overlay: document.getElementById('overlay')
     };
 
+    // Load values
     els.chkC.checked=cfg.c; els.rngC.value=cfg.cs;
     els.chkE.checked=cfg.e; els.rngE.value=cfg.es; els.rngD.value=cfg.d;
     els.chkW.checked=cfg.w; els.rngWL.value = cfg.wl || 1; els.rngWR.value = cfg.wr || 1;
@@ -295,7 +295,7 @@
         cfg.o = els.chkO.checked; cfg.os = els.rngO.value;
         cfg.ls = els.rngL.value;
         
-        localStorage.setItem('dashCfgV13', JSON.stringify(cfg));
+        localStorage.setItem('dashCfgV14', JSON.stringify(cfg));
         els.lblD.innerText = cfg.d;
         
         document.documentElement.style.setProperty('--scale-clock', cfg.cs);
