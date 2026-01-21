@@ -13,7 +13,7 @@
         --scale-events: 1;
         --scale-weather-left: 1;
         --scale-weather-right: 1;
-        --scale-logo: 1; /* Variável para tamanho da logo */
+        --scale-logo: 1; 
         --overlay-opacity: 0.8; 
     }
 
@@ -59,8 +59,6 @@
         display: flex;
         align-items: flex-start;
         gap: 50px;
-        /* ALTERAÇÃO: Espaço na direita para a agenda não bater na logo.
-           Calculado com base no tamanho da logo */
         padding-right: calc(150px * var(--scale-logo));
     }
 
@@ -80,7 +78,9 @@
     #weekday { 
         font-size: 3.8em; font-weight: 400; 
         margin-top: 0.1em; line-height: 1;
-        text-transform: capitalize; color: #fff; 
+        text-transform: capitalize; color: #fff;
+        /* AQUI ESTÁ A CORREÇÃO: Isso impede que a palavra quebre linha */
+        white-space: nowrap; 
     }
     
     #full-date { 
@@ -106,9 +106,10 @@
         border-bottom: 1px solid rgba(255,255,255,0.3);
         padding-bottom: 0.4em; margin-bottom: 0.8em;
         display: flex; align-items: baseline; gap: 0.5em;
+        white-space: nowrap;
     }
     .day-header strong { font-size: 2.5em; font-weight: 300; line-height: 1; }
-    .day-header span { font-size: 1.5em; font-weight: 400; opacity: 0.9; }
+    .day-header span { font-size: 1.2em; font-weight: 400; opacity: 0.9; text-transform: capitalize; }
 
     .event-item {
         border-left: 5px solid #00aaff;
@@ -124,20 +125,20 @@
         color: #ffffff; line-height: 1.1;
     }
 
-    /* --- LOGO (NOVO BOTÃO) --- */
+    /* --- LOGO --- */
     #settings-logo {
         position: fixed;
-        top: 35px;        /* Posição no topo */
-        right: 45px;      /* Posição na direita (mesma margem do corpo) */
-        height: calc(70px * var(--scale-logo)); /* Tamanho dinâmico */
+        top: 35px;        
+        right: 45px;      
+        height: calc(70px * var(--scale-logo)); 
         width: auto;
         z-index: 200;
         opacity: 0.9;
-        cursor: pointer;  /* Mostra que é clicável */
+        cursor: pointer;  
         transition: transform 0.2s;
     }
     #settings-logo:hover {
-        transform: scale(1.05); /* Efeito de zoom */
+        transform: scale(1.05); 
         opacity: 1;
     }
 
@@ -254,11 +255,11 @@
 
 <script>
     // --- Configuração Padrão ---
-    let cfg = JSON.parse(localStorage.getItem('dashCfgV14')) || { 
+    let cfg = JSON.parse(localStorage.getItem('dashCfgV18')) || { 
         c:true, cs:1, 
         e:true, es:1, d:4, 
         w:true, wl:1, wr:1, 
-        ls:1, // Logo Scale
+        ls:1, 
         o:true, os:0.8
     };
 
@@ -269,14 +270,11 @@
         rngWL: document.getElementById('rng-weather-left'), 
         rngWR: document.getElementById('rng-weather-right'),
         chkO: document.getElementById('chk-overlay'), rngO: document.getElementById('rng-overlay'),
-        
-        rngL: document.getElementById('rng-logo'), // Slider Logo
-        
+        rngL: document.getElementById('rng-logo'),
         wC: document.getElementById('widget-clock'), wE: document.getElementById('events-container'), wW: document.getElementById('widget-weather'),
         lblD: document.getElementById('lbl-days'), overlay: document.getElementById('overlay')
     };
 
-    // Load values
     els.chkC.checked=cfg.c; els.rngC.value=cfg.cs;
     els.chkE.checked=cfg.e; els.rngE.value=cfg.es; els.rngD.value=cfg.d;
     els.chkW.checked=cfg.w; els.rngWL.value = cfg.wl || 1; els.rngWR.value = cfg.wr || 1;
@@ -295,7 +293,7 @@
         cfg.o = els.chkO.checked; cfg.os = els.rngO.value;
         cfg.ls = els.rngL.value;
         
-        localStorage.setItem('dashCfgV14', JSON.stringify(cfg));
+        localStorage.setItem('dashCfgV18', JSON.stringify(cfg));
         els.lblD.innerText = cfg.d;
         
         document.documentElement.style.setProperty('--scale-clock', cfg.cs);
@@ -317,6 +315,7 @@
         document.getElementById('time').innerText = n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
         document.getElementById('seconds').innerText = String(n.getSeconds()).padStart(2,'0');
         
+        // --- RELÓGIO ORIGINAL ---
         let wd = n.toLocaleDateString('pt-BR',{weekday:'long'});
         wd = wd.charAt(0).toUpperCase() + wd.slice(1);
         if(wd.indexOf('-') > -1) {
@@ -333,7 +332,18 @@
     setInterval(tick, 1000); tick();
 
     const SID = '19laSwxqymO6A2VJ-WXTZCuiOrShyxbK3cWsMM5MOTtI';
-    const Q = encodeURIComponent('SELECT B, C, E WHERE B IS NOT NULL ORDER BY B, E');
+    const Q = encodeURIComponent('SELECT B, C, E, J WHERE B IS NOT NULL ORDER BY B, E');
+
+    function parseDateHelper(raw) {
+        if (!raw) return null;
+        if (typeof raw === 'string' && raw.includes('Date')) {
+            return new Date(eval("new " + raw));
+        } else if (typeof raw === 'string' && raw.includes('/')) {
+            const [dd, mm, aaaa] = raw.split('/');
+            return new Date(aaaa, mm - 1, dd);
+        }
+        return null;
+    }
 
     async function loadAgenda() {
         if(!cfg.e) return;
@@ -344,27 +354,39 @@
             const today = new Date(); today.setHours(0,0,0,0);
             
             const days = {};
+            
             j.table.rows.forEach(row => {
                 if(!row.c[0]) return;
+                
                 let dRaw = row.c[0].f || row.c[0].v;
-                let dt;
-                if(String(dRaw).includes('/')) {
-                    const [dd,mm,aaaa] = dRaw.split('/');
-                    dt = new Date(aaaa,mm-1,dd);
-                } else if(String(dRaw).includes('Date')) {
-                    dt = new Date(eval("new "+dRaw));
-                } else return;
-                
-                dt.setHours(0,0,0,0);
-                if(dt < today) return;
+                let dtStart = parseDateHelper(dRaw);
+                if (!dtStart) return;
 
-                const k = dt.toISOString();
-                if(!days[k]) days[k] = [];
-                
-                let time = row.c[2]?(row.c[2].f||row.c[2].v):"";
+                let dtEnd = dtStart; 
+                if (row.c[3]) {
+                    let endRaw = row.c[3].f || row.c[3].v;
+                    let parsedEnd = parseDateHelper(endRaw);
+                    if (parsedEnd) dtEnd = parsedEnd;
+                }
+
+                dtStart.setHours(0,0,0,0);
+                dtEnd.setHours(0,0,0,0);
+
+                let title = row.c[1] ? row.c[1].v : "Evento";
+                let time = row.c[2] ? (row.c[2].f||row.c[2].v) : "";
                 if(time.length>5) time = time.substring(0,5);
-                
-                days[k].push({ t: row.c[1]?row.c[1].v:"Evento", h: time });
+
+                let loopDate = new Date(dtStart);
+                let safety = 0; 
+                while(loopDate <= dtEnd && safety < 366) {
+                    if(loopDate >= today) {
+                        const k = loopDate.toISOString();
+                        if(!days[k]) days[k] = [];
+                        days[k].push({ t: title, h: time });
+                    }
+                    loopDate.setDate(loopDate.getDate() + 1);
+                    safety++;
+                }
             });
 
             let html = "";
@@ -373,13 +395,21 @@
                 if(c >= cfg.d) return;
                 const date = new Date(k);
                 const diff = Math.round((date-today)/(864e5));
+                
                 let lbl = (diff===0?"Hoje": (diff===1?"Amanhã": date.toLocaleDateString('pt-BR',{weekday:'long'})));
                 if(diff > 1) {
                     lbl = lbl.charAt(0).toUpperCase() + lbl.slice(1);
                     if(lbl.includes('-feira')) lbl = lbl.replace('-feira',''); 
                 }
 
+                // --- MÊS NA AGENDA (Lado Direito) ---
+                let mon = date.toLocaleDateString('pt-BR',{month:'long'});
+                mon = mon.charAt(0).toUpperCase() + mon.slice(1);
+                let headerText = `${mon}, ${lbl}`;
+
                 let evs = "";
+                days[k].sort((a,b) => a.h.localeCompare(b.h));
+
                 days[k].forEach(e => {
                     evs += `<div class="event-item">
                         <div class="event-time">${e.h}</div>
@@ -388,7 +418,7 @@
                 });
 
                 html += `<div class="day-column">
-                    <div class="day-header"><strong>${date.getDate()}</strong> <span>${lbl}</span></div>
+                    <div class="day-header"><strong>${date.getDate()}</strong> <span>${headerText}</span></div>
                     ${evs}
                 </div>`;
                 c++;
@@ -444,5 +474,3 @@
 </script>
 </body>
 </html>
-
-
