@@ -13,6 +13,7 @@
         --scale-events: 1;
         --scale-weather-left: 1;
         --scale-weather-right: 1;
+        --scale-logo: 1; /* Nova variável para o Logo */
         --overlay-opacity: 0.8; 
     }
 
@@ -51,7 +52,6 @@
         flex-direction: column;
         justify-content: space-between;
         height: 100vh;
-        /* AUMENTEI O TOPO DE 30px PARA 60px PARA DAR O ESPAÇO */
         padding: 60px 45px 30px 45px;
     }
 
@@ -61,7 +61,7 @@
         gap: 50px;
     }
 
-    /* --- RELÓGIO (Open Sans) --- */
+    /* --- RELÓGIO --- */
     .clock-wrapper {
         font-size: calc(16px * var(--scale-clock));
         display: flex;
@@ -85,7 +85,7 @@
         color: rgba(255,255,255,0.7); margin-top: 0.1em; 
     }
 
-    /* --- AGENDA (Rubik) --- */
+    /* --- AGENDA --- */
     #events-container {
         font-family: 'Rubik', sans-serif;
         display: flex;
@@ -119,6 +119,21 @@
     .event-title { 
         font-size: 1.4em; font-weight: 500;
         color: #ffffff; line-height: 1.1;
+    }
+
+    /* --- LOGO (NOVO) --- */
+    #logo-container {
+        /* Flexível para não quebrar o layout */
+        display: flex;
+        align-items: center; 
+        justify-content: flex-start; /* Alinha a esquerda */
+        pointer-events: none; /* Deixa clicar no fundo se precisar */
+    }
+    #my-logo {
+        /* Altura base de 100px multiplicada pela escala */
+        height: calc(100px * var(--scale-logo)); 
+        width: auto;
+        opacity: 0.95;
     }
 
     /* --- CLIMA --- */
@@ -172,6 +187,7 @@
     <div id="overlay"></div>
 
     <i class="fa-solid fa-gear" id="settings-btn" onclick="toggleSettings()"></i>
+    
     <div id="settings-modal">
         <div class="s-title">Configurações</div>
         
@@ -185,6 +201,13 @@
             <input type="range" id="rng-clock" min="0.5" max="2" step="0.1" oninput="upCfg()">
         </div>
         <hr>
+        
+        <div class="setting-group">
+            <div class="row-toggle"><span>Logo (Esq. Meio)</span> <label class="switch"><input type="checkbox" id="chk-logo" onchange="upCfg()"><span class="slider"></span></label></div>
+            <input type="range" id="rng-logo" min="0.2" max="3" step="0.1" oninput="upCfg()">
+        </div>
+        <hr>
+
         <div class="setting-group">
             <div class="row-toggle"><span>Eventos</span> <label class="switch"><input type="checkbox" id="chk-events" onchange="upCfg()"><span class="slider"></span></label></div>
             <input type="range" id="rng-events" min="0.5" max="2" step="0.1" oninput="upCfg()">
@@ -194,10 +217,8 @@
         <hr>
         <div class="setting-group">
             <div class="row-toggle"><span>Clima Geral</span> <label class="switch"><input type="checkbox" id="chk-weather" onchange="upCfg()"><span class="slider"></span></label></div>
-            
             <label class="sub-label">Tamanho Atual (Esq)</label>
             <input type="range" id="rng-weather-left" min="0.5" max="2" step="0.1" oninput="upCfg()">
-            
             <label class="sub-label">Tamanho Previsão (Dir)</label>
             <input type="range" id="rng-weather-right" min="0.5" max="2" step="0.1" oninput="upCfg()">
         </div>
@@ -206,14 +227,18 @@
     </div>
 
     <div class="main-container">
+        
         <div class="top-section">
             <div class="clock-wrapper" id="widget-clock">
                 <div class="time-group"><span id="time">00:00</span><span id="seconds">00</span></div>
                 <div id="weekday">---</div>
                 <div id="full-date">---</div>
             </div>
-            <div id="events-container">
-                </div>
+            <div id="events-container"></div>
+        </div>
+
+        <div id="logo-container">
+            <img src="logo.png" id="my-logo" alt="Logo">
         </div>
 
         <div class="bottom-section" id="widget-weather">
@@ -230,10 +255,12 @@
 
 <script>
     // --- Configuração Padrão ---
-    let cfg = JSON.parse(localStorage.getItem('dashCfgV9')) || { 
+    // Adicionado 'l' (logo visible) e 'ls' (logo scale)
+    let cfg = JSON.parse(localStorage.getItem('dashCfgV11')) || { 
         c:true, cs:1, 
         e:true, es:1, d:4, 
         w:true, wl:1, wr:1, 
+        l:true, ls:1, // Configs do Logo
         o:true, os:0.8
     };
 
@@ -244,6 +271,9 @@
         rngWL: document.getElementById('rng-weather-left'), 
         rngWR: document.getElementById('rng-weather-right'),
         chkO: document.getElementById('chk-overlay'), rngO: document.getElementById('rng-overlay'),
+        // Elementos do Logo
+        chkL: document.getElementById('chk-logo'), rngL: document.getElementById('rng-logo'), wL: document.getElementById('logo-container'),
+        
         wC: document.getElementById('widget-clock'), wE: document.getElementById('events-container'), wW: document.getElementById('widget-weather'),
         lblD: document.getElementById('lbl-days'), overlay: document.getElementById('overlay')
     };
@@ -253,6 +283,8 @@
     els.chkE.checked=cfg.e; els.rngE.value=cfg.es; els.rngD.value=cfg.d;
     els.chkW.checked=cfg.w; els.rngWL.value = cfg.wl || 1; els.rngWR.value = cfg.wr || 1;
     els.chkO.checked=cfg.o; els.rngO.value=cfg.os;
+    // Load Logo values
+    els.chkL.checked=cfg.l; els.rngL.value=cfg.ls;
 
     function toggleSettings() {
         const m = document.getElementById('settings-modal');
@@ -264,20 +296,24 @@
         cfg.e = els.chkE.checked; cfg.es = els.rngE.value; cfg.d = parseInt(els.rngD.value);
         cfg.w = els.chkW.checked; cfg.wl = els.rngWL.value; cfg.wr = els.rngWR.value;
         cfg.o = els.chkO.checked; cfg.os = els.rngO.value;
+        // Save Logo
+        cfg.l = els.chkL.checked; cfg.ls = els.rngL.value;
         
-        localStorage.setItem('dashCfgV9', JSON.stringify(cfg));
+        localStorage.setItem('dashCfgV11', JSON.stringify(cfg));
         els.lblD.innerText = cfg.d;
         
         document.documentElement.style.setProperty('--scale-clock', cfg.cs);
         document.documentElement.style.setProperty('--scale-events', cfg.es);
         document.documentElement.style.setProperty('--scale-weather-left', cfg.wl);
         document.documentElement.style.setProperty('--scale-weather-right', cfg.wr);
+        document.documentElement.style.setProperty('--scale-logo', cfg.ls); // Aplica escala logo
         document.documentElement.style.setProperty('--overlay-opacity', cfg.os);
 
         els.wC.classList.toggle('hidden', !cfg.c);
         els.wE.classList.toggle('hidden', !cfg.e);
         els.wW.classList.toggle('hidden', !cfg.w);
         els.overlay.classList.toggle('hidden', !cfg.o);
+        els.wL.classList.toggle('hidden', !cfg.l); // Toggle Logo
     }
     upCfg();
 
@@ -405,15 +441,9 @@
         } catch(e){ console.error(e); }
     }
 
-    // --- CICLOS DE ATUALIZAÇÃO ---
-    // Carga inicial
     loadAgenda();
     loadWeather();
-
-    // Atualiza Agenda a cada 15 segundos (Quase tempo real)
     setInterval(loadAgenda, 15000);
-
-    // Atualiza Clima a cada 10 minutos (Economia de API)
     setInterval(loadWeather, 600000);
 
 </script>
